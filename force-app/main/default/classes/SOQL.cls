@@ -237,7 +237,7 @@ public with sharing class SOQL {
 	 * @return A list of Cases
 	 */
 	public static List<Case> getCasesWithStatus() {
-		Case[] casesWithOpenStatus = [SELECT Id, Status, Origin, CreatedDate FROM Case WHERE Status != 'Closed' Order By CreatedDate Limit 10 Offset 5];
+		Case[] casesWithOpenStatus = [SELECT Id, Status, Origin, CreatedDate FROM Case WHERE Status = 'Open' Order By CreatedDate Limit 10 Offset 5];
 		return casesWithOpenStatus; // Replace null with the variable you used to store the result
 	}
 
@@ -276,7 +276,7 @@ public with sharing class SOQL {
 		Account[] accNotInCountry = [SELECT Id, Name, BillingCountry FROM Account WHERE BillingCountry != :country];
 		// Loop through each Account and add the Id and Name to the map
 			For(Account acc: accNotInCountry){
-				accountIdsToNames.put(acc.Id, acc.BillingCountry);
+				accountIdsToNames.put(acc.Id, acc.Name);
 			}
 		return accountIdsToNames; // Replace null with the variable you used to store the result
 	}
@@ -342,18 +342,20 @@ public with sharing class SOQL {
 		// Create a set of email domains from the Leads
 			Set<String> leadEmailDomains = new Set<String>();
 		// Loop through each Lead
-			for(Lead currentLead : leadResults){
-				// Get the email from the Lead
-				// Check if the email is not null
-				if(currentLead.Email != null){
-					String emailDomain = currentlead.Email.split('@')[1];
-					String searchForDomain = '%' + emailDomain + '%';
-					// Add the email domain to the set
-					leadEmailDomains.add(searchForDomain);
+				for(Lead currentLead : leadResults){
+					// Get the email from the Lead
+					// Check if the email is not null
+					if(currentLead.Email != null && currentLead.Email.contains('@')){
+						// Add the email domain to the set
+						leadEmailDomains.add(currentlead.Email.substringAfter('@'));
+					}
 				}
-			}		
+			Set<String> websiteDomains = new Set<String>();
+				for(String domain: leadEmailDomains){
+					websiteDomains.add('www.' + domain);
+				}
 		// Query the Accounts
-			Account[] accMatchingDomain = [SELECT Id, Name, Website FROM Account WHERE Website LIKE :leadEmailDomains];
+			Account[] accMatchingDomain = [SELECT Id, Name, Website FROM Account WHERE Website IN :websiteDomains];
 
 		return accMatchingDomain; // Replace null with the variable you used to store the result
 	}
